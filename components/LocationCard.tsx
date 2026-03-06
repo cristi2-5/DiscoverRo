@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react'
 import Link from 'next/link'
+import { SaveLocationButton } from './SaveLocationButton'
 
 // Defined based on your schema expectations
 export interface LocationCardProps {
@@ -8,6 +9,7 @@ export interface LocationCardProps {
   description: string
   category: string
   address: string
+  cities?: string[] | null
   images_urls: string[] | null
   distanceKm?: number | null // dynamically calculated
   source?: 'db' | 'global'
@@ -26,6 +28,7 @@ export function LocationCard({ location }: { location: LocationCardProps }) {
           alt={location.title}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
+        <SaveLocationButton locationId={location.id} />
         <div className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-700 shadow backdrop-blur-sm">
           {location.category}
         </div>

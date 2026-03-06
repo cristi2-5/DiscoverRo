@@ -49,6 +49,7 @@ export interface Database {
           description: string | null
           category: string | null
           address: string | null
+          cities: string[] | null
           location_point: unknown | null // Depending on PostGIS structure, often queried as GeoJSON or WKT
           images_urls: string[] | null
           is_published: boolean | null
@@ -60,6 +61,7 @@ export interface Database {
           description?: string | null
           category?: string | null
           address?: string | null
+          cities?: string[] | null
           location_point?: unknown | null
           images_urls?: string[] | null
           is_published?: boolean | null
@@ -71,6 +73,7 @@ export interface Database {
           description?: string | null
           category?: string | null
           address?: string | null
+          cities?: string[] | null
           location_point?: unknown | null
           images_urls?: string[] | null
           is_published?: boolean | null

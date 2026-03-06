@@ -27,9 +27,18 @@ export default async function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <span className="text-sm font-medium text-gray-700">
-                  Welcome, {profile?.full_name || user.email}
-                </span>
+                <Link
+                  href="/plan"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
+                >
+                  My Plan
+                </Link>
+                <Link
+                  href="/profile"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
+                >
+                  {profile?.full_name || user.email}
+                </Link>
                 <form action={signout}>
                    <button
                     type="submit"
