@@ -1,4 +1,5 @@
 import { MapPin } from 'lucide-react'
+import Link from 'next/link'
 
 // Defined based on your schema expectations
 export interface LocationCardProps {
@@ -9,6 +10,7 @@ export interface LocationCardProps {
   address: string
   images_urls: string[] | null
   distanceKm?: number | null // dynamically calculated
+  source?: 'db' | 'global'
 }
 
 export function LocationCard({ location }: { location: LocationCardProps }) {
@@ -17,7 +19,7 @@ export function LocationCard({ location }: { location: LocationCardProps }) {
     : 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80' // Travel placeholder
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl">
+    <Link href={`/locatie/${location.id}`} className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl">
       <div className="relative h-48 w-full overflow-hidden">
         <img 
           src={imageUrl} 
@@ -30,7 +32,15 @@ export function LocationCard({ location }: { location: LocationCardProps }) {
       </div>
       
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+        <div className="mb-2">
+          {location.source === 'global' ? (
+             <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Sursă: Global Discovery</span>
+          ) : (
+             <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/10">Sursă: DiscoverRo</span>
+          )}
+        </div>
+        
+        <h3 className="line-clamp-2 text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
           {location.title}
         </h3>
         
@@ -53,6 +63,6 @@ export function LocationCard({ location }: { location: LocationCardProps }) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
