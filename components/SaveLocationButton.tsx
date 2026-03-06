@@ -6,8 +6,6 @@ import { saveToPlan, removeFromPlan } from '@/lib/actions/planner'
 
 interface SaveLocationButtonProps {
   locationId: string
-  // If we had a global context for user's saved items, we would pass isSaved initially. 
-  // For simplicity, we'll let the user click it and toggle the state visually.
   initiallySaved?: boolean
 }
 
@@ -17,32 +15,34 @@ export function SaveLocationButton({ locationId, initiallySaved = false }: SaveL
   const [errorFlash, setErrorFlash] = useState<string | null>(null)
 
   const handleToggleSave = async (e: React.MouseEvent) => {
-    e.preventDefault() // prevent navigating to Link
+    e.preventDefault()
     e.stopPropagation()
 
-    // Optimistic UI update
     const previousSavedState = isSaved
     setIsSaved(!isSaved)
 
     startTransition(async () => {
       try {
-        let result
-        if (previousSavedState) {
-          result = await removeFromPlan(locationId)
-        } else {
-          result = await saveToPlan(locationId)
-        }
+        const result = previousSavedState
+          ? await removeFromPlan(locationId)
+          : await saveToPlan(locationId)
 
         if (result?.error) {
-          console.error('Save/Remove plan error:', result.error)
           setIsSaved(previousSavedState)
+
+          // If user is not authenticated, redirect to login
+          if ((result as { unauthenticated?: boolean }).unauthenticated) {
+            window.location.href = '/login'
+            return
+          }
+
           setErrorFlash(result.error)
           setTimeout(() => setErrorFlash(null), 4000)
         }
       } catch (err) {
         console.error('Server action failed:', err)
         setIsSaved(previousSavedState)
-        setErrorFlash('Eroare la salvare. Verifică dacă ești autentificat.')
+        setErrorFlash('Verifică dacă ești autentificat.')
         setTimeout(() => setErrorFlash(null), 4000)
       }
     })
@@ -56,8 +56,8 @@ export function SaveLocationButton({ locationId, initiallySaved = false }: SaveL
         isSaved 
           ? 'bg-rose-50 text-rose-500' 
           : 'bg-white/90 text-gray-400 hover:text-rose-500'
-      }`}
-      title={isSaved ? "Sterge din plan" : "Salvează în plan"}
+      } ${isPending ? 'opacity-60 cursor-not-allowed' : ''}`}
+      title={isSaved ? 'Șterge din plan' : 'Salvează în plan'}
     >
       <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
       {errorFlash && (

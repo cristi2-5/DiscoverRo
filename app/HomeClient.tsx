@@ -105,7 +105,7 @@ export function HomeClient({ initialLocations }: { initialLocations: DBLocation[
           const allCards = mapToCards(initialLocations, { lat, lon }, 'db')
           allCards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
           // Show only locations within 30km radius as a reasonable local scope
-          const nearby = allCards.filter(c => c.distanceKm !== null && c.distanceKm <= 30)
+          const nearby = allCards.filter(c => (c.distanceKm ?? null) !== null && (c.distanceKm as number) <= 30)
           setLocations(nearby.length > 0 ? nearby : allCards.slice(0, 40))
 
         } catch (err) {

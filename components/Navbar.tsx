@@ -11,7 +11,7 @@ export default async function Navbar() {
 
   let profile = null
   if (user) {
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      const { data } = await supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
       profile = data
   }
 
@@ -26,7 +26,15 @@ export default async function Navbar() {
           </div>
           <div className="flex items-center space-x-4">
             {user ? (
-              <>
+                <>
+                {profile?.role === 'merchant' && (
+                  <Link
+                    href="/dashboard"
+                    className="rounded-md px-3 py-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 hover:bg-indigo-50/10 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 <Link
                   href="/plan"
                   className="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors"

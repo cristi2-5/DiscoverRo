@@ -118,3 +118,109 @@ export async function getLocationById(id: string) {
 
   return data
 }
+
+/** Fetch all locations owned by the currently logged-in merchant */
+export async function getMerchantLocations() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select('*')
+    .eq('owner_id', user.id)
+    .order('id', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching merchant locations:', error)
+    return []
+  }
+
+  return data ?? []
+}
+
+/** Create a new location for the logged-in merchant */
+export async function createLocation(formData: {
+  title: string
+  description: string
+  category: string
+  cities: string[]
+  lat: number | null
+  lng: number | null
+  imageFiles: File[]
+}) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Neautentificat' }
+
+  // 1. Upload images to Supabase Storage
+  const imageUrls: string[] = []
+  for (const file of formData.imageFiles) {
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error: uploadError } = await supabase.storage
+      .from('location-images')
+      .upload(path, file, { upsert: false })
+    if (uploadError) {
+      console.error('Image upload error:', uploadError)
+      continue
+    }
+    const { data: urlData } = supabase.storage
+      .from('location-images')
+      .getPublicUrl(path)
+    imageUrls.push(urlData.publicUrl)
+  }
+
+  // 2. Build location_point WKT if coordinates provided
+  const locationPoint =
+    formData.lat !== null && formData.lng !== null
+      ? `POINT(${formData.lng} ${formData.lat})`
+      : null
+
+  // 3. Insert the location row
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('locations')
+    .insert({
+      owner_id: user.id,
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      cities: formData.cities,
+      location_point: locationPoint,
+      images_urls: imageUrls,
+      is_published: true,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating location:', error)
+    return { error: 'A apărut o eroare la salvarea locației.' }
+  }
+
+  return { data }
+}
+
+/** Delete a location owned by the logged-in merchant */
+export async function deleteLocation(id: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Neautentificat' }
+
+  const { error } = await supabase
+    .from('locations')
+    .delete()
+    .eq('id', id)
+    .eq('owner_id', user.id) // safety: only own locations
+
+  if (error) {
+    console.error('Error deleting location:', error)
+    return { error: 'Eroare la ștergerea locației.' }
+  }
+
+  return { success: true }
+}
