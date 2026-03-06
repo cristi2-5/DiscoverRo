@@ -15,6 +15,7 @@ interface Location {
   cities: string[] | null
   images_urls: string[] | null
   is_published: boolean | null
+  views_count: number | null
 }
 
 interface Profile {
@@ -95,25 +96,30 @@ function LocationCard({ location, onDelete }: { location: Location; onDelete: ()
           ? <Image src={thumb} alt={location.title ?? ''} fill className="object-cover" unoptimized />
           : (
             <div className="absolute inset-0 flex items-center justify-center text-4xl">
-              {location.category === 'Restaurant' ? '🍽️'
-                : location.category === 'Cazare' ? '🏨'
-                : location.category === 'Natură' ? '🌿'
-                : location.category === 'Muzeu' ? '🏛️'
+              {location.category === 'restaurant' ? '🍽️'
+                : location.category === 'cazare' ? '🏨'
+                : location.category === 'natura' ? '🌿'
+                : location.category === 'muzeu' ? '🏛️'
                 : '📍'}
             </div>
           )
         }
         {/* Category pill */}
         {location.category && (
-          <span className="absolute top-2 left-2 rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+          <span className="absolute top-2 left-2 rounded-full px-2.5 py-0.5 text-xs font-medium text-white capitalize"
             style={{ background: 'rgba(99,102,241,0.8)', backdropFilter: 'blur(4px)' }}>
-            {location.category}
+            {location.category === 'natura' ? 'Natură' : location.category === 'altul' ? 'Altele' : location.category}
           </span>
         )}
         {/* Published pill */}
         <span className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-xs font-medium ${location.is_published ? 'text-emerald-300' : 'text-amber-300'}`}
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
           {location.is_published ? '● Publicat' : '● Draft'}
+        </span>
+        {/* Views count pill */}
+        <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white shadow"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}>
+          <span className="text-[10px]">👁</span> {location.views_count || 0}
         </span>
       </div>
 
@@ -167,33 +173,36 @@ export default function DashboardClient({ initialLocations, profile }: Dashboard
   }
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8"
-      style={{ background: 'linear-gradient(135deg, #0a0a1a 0%, #0d1b2a 50%, #0a1628 100%)' }}>
+    <div className="min-h-screen pt-24 pb-10 px-4 sm:px-6 lg:px-8 bg-slate-50">
       <div className="mx-auto max-w-6xl">
 
         {/* Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-slate-900">
               👋 Bun venit, {profile.full_name || profile.email || 'Comerciant'}!
             </h1>
-            <p className="text-gray-400 mt-1 text-sm">Gestionează locațiile tale din DiscoverRo</p>
+            <p className="text-slate-500 mt-1 text-sm">Gestionează locațiile tale din DiscoverRo</p>
           </div>
           <PremiumBadge profile={profile} />
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+        {/* Stats row - Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Locații totale', value: locations.length, icon: '📍' },
-            { label: 'Publicate', value: locations.filter((l) => l.is_published).length, icon: '✅' },
-            { label: 'Cu imagini', value: locations.filter((l) => l.images_urls && l.images_urls.length > 0).length, icon: '🖼️' },
+            { label: 'Locații totale', value: locations.length, icon: '📍', colSpan: 'md:col-span-2', bg: 'bg-white' },
+            { label: 'Publicate', value: locations.filter((l) => l.is_published).length, icon: '✅', colSpan: 'col-span-1', bg: 'bg-white' },
+            { label: 'Cu imagini', value: locations.filter((l) => l.images_urls && l.images_urls.length > 0).length, icon: '🖼️', colSpan: 'col-span-1', bg: 'bg-white' },
+            { label: 'Vizualizări (total)', value: locations.reduce((sum, l) => sum + (l.views_count || 0), 0), icon: '👁️', colSpan: 'md:col-span-4', bg: 'bg-gradient-to-r from-teal-500/10 to-transparent' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl p-4 text-center"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{stat.label}</div>
+            <div key={stat.label} className={`rounded-2xl p-6 ${stat.colSpan} ${stat.bg} shadow-md border border-teal-100 flex flex-col justify-center transition-all hover:-translate-y-1 hover:shadow-lg hover:border-teal-300 hover:shadow-teal-500/10`}>
+              <div className="flex items-center gap-4">
+                <div className="text-4xl bg-teal-50 p-3 rounded-xl border border-teal-100">{stat.icon}</div>
+                <div>
+                  <div className="text-3xl font-extrabold text-slate-800">{stat.value}</div>
+                  <div className="text-sm font-medium text-teal-600 mt-0.5 tracking-wide uppercase">{stat.label}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -201,10 +210,9 @@ export default function DashboardClient({ initialLocations, profile }: Dashboard
         {/* CTA Button */}
         <button
           onClick={() => setShowModal(true)}
-          className="w-full py-5 rounded-2xl text-lg font-bold text-white mb-8 transition-all hover:scale-[1.01] active:scale-100"
+          className="w-full py-5 rounded-2xl text-lg font-bold text-white mb-8 transition-all hover:scale-[1.01] active:scale-100 shadow-xl shadow-teal-500/20"
           style={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
-            boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
+            background: 'linear-gradient(135deg, #0d9488 0%, #10b981 100%)',
           }}
         >
           ＋ Adaugă Locație Nouă
@@ -212,15 +220,14 @@ export default function DashboardClient({ initialLocations, profile }: Dashboard
 
         {/* Locations Grid */}
         {locations.length === 0 ? (
-          <div className="text-center py-20 rounded-2xl"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '2px dashed rgba(255,255,255,0.1)' }}>
+          <div className="text-center py-20 rounded-2xl bg-white border border-slate-200">
             <div className="text-5xl mb-4">🗺️</div>
-            <h2 className="text-xl font-semibold text-gray-300">Nicio locație adăugată încă</h2>
-            <p className="text-gray-500 text-sm mt-2">Apasă butonul de mai sus pentru a adăuga prima ta locație!</p>
+            <h2 className="text-xl font-semibold text-slate-800">Nicio locație adăugată încă</h2>
+            <p className="text-slate-500 text-sm mt-2">Apasă butonul de mai sus pentru a adăuga prima ta locație!</p>
           </div>
         ) : (
           <div>
-            <h2 className="text-lg font-semibold text-gray-300 mb-4">Locațiile mele ({locations.length})</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">Locațiile mele ({locations.length})</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {locations.map((loc) => (
                 <LocationCard

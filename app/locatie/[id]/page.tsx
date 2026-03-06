@@ -1,7 +1,7 @@
-import { getLocationById } from '@/lib/actions/locations'
+import { getLocationById, incrementLocationViews } from '@/lib/actions/locations'
 import { extractCoordinates } from '@/lib/utils/distance'
 import { notFound } from 'next/navigation'
-import { MapPin, ArrowLeft, Image as ImageIcon } from 'lucide-react'
+import { MapPin, ArrowLeft, Image as ImageIcon, Phone, Globe, Instagram, Facebook } from 'lucide-react'
 import Link from 'next/link'
 import MapWrapper from '@/components/MapWrapper'
 
@@ -73,6 +73,9 @@ export default async function LocationDetailsPage({
     notFound()
   }
 
+  // Increment views silently in the background (no await to avoid blocking render if RPC is slow)
+  incrementLocationViews(id).catch(console.error)
+
   const coords   = extractCoordinates(location.location_point)
   const heroImage = await resolveHeroImage(location)
 
@@ -126,6 +129,54 @@ export default async function LocationDetailsPage({
                   <p className="italic text-gray-400">Nicio descriere disponibilă.</p>
                 )}
               </div>
+
+              {/* Action Buttons Section */}
+              {(location.phone || location.website || location.instagram || location.facebook) && (
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  {location.phone && (
+                    <a 
+                      href={`tel:${location.phone}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 ring-1 ring-inset ring-indigo-700/10"
+                    >
+                      <Phone className="h-4 w-4" />
+                      Sună
+                    </a>
+                  )}
+                  {location.website && (
+                    <a 
+                      href={location.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 ring-1 ring-inset ring-gray-300 shadow-sm"
+                    >
+                      <Globe className="h-4 w-4 text-gray-500" />
+                      Website
+                    </a>
+                  )}
+                  {location.instagram && (
+                    <a 
+                      href={location.instagram.startsWith('http') ? location.instagram : `https://instagram.com/${location.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-pink-50 text-pink-600 transition-colors hover:bg-pink-100 ring-1 ring-inset ring-pink-600/10"
+                      title="Instagram"
+                    >
+                      <Instagram className="h-5 w-5" />
+                    </a>
+                  )}
+                  {location.facebook && (
+                    <a 
+                      href={location.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100 ring-1 ring-inset ring-blue-600/10"
+                      title="Facebook"
+                    >
+                      <Facebook className="h-5 w-5" />
+                    </a>
+                  )}
+                </div>
+              )}
             </section>
 
             {location.images_urls && location.images_urls.length > 1 && (

@@ -145,10 +145,15 @@ export async function createLocation(formData: {
   title: string
   description: string
   category: string
+  address?: string
   cities: string[]
   lat: number | null
   lng: number | null
   imageFiles: File[]
+  phone?: string
+  website?: string
+  instagram?: string
+  facebook?: string
 }) {
   const supabase = await createClient()
 
@@ -188,10 +193,15 @@ export async function createLocation(formData: {
       title: formData.title,
       description: formData.description,
       category: formData.category,
+      address: formData.address || null,
       cities: formData.cities,
       location_point: locationPoint,
       images_urls: imageUrls,
       is_published: true,
+      phone: formData.phone || null,
+      website: formData.website || null,
+      instagram: formData.instagram || null,
+      facebook: formData.facebook || null,
     })
     .select()
     .single()
@@ -223,4 +233,15 @@ export async function deleteLocation(id: string) {
   }
 
   return { success: true }
+}
+
+/** Increment views count using PG RPC */
+export async function incrementLocationViews(id: string) {
+  const supabase = await createClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).rpc('increment_views', { location_id: id })
+  if (error) {
+    console.error(`Error incrementing views for location ${id}:`, error)
+  }
 }

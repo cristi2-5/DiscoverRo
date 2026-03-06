@@ -1,9 +1,28 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Loader2, DatabaseZap } from 'lucide-react'
+import { Search, DatabaseZap } from 'lucide-react'
 import { LocationCard, LocationCardProps } from '@/components/LocationCard'
 import { calculateDistance, extractCoordinates } from '@/lib/utils/distance'
+
+function LocationCardSkeleton() {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm animate-pulse">
+      <div className="aspect-[4/3] w-full bg-slate-200 relative">
+        <div className="absolute right-3 top-3 h-6 w-16 bg-slate-300 rounded-full" />
+      </div>
+      <div className="flex flex-1 flex-col p-5 bg-white">
+        <div className="h-5 w-24 bg-slate-200 rounded mb-4" />
+        <div className="h-7 w-3/4 bg-slate-300 rounded mb-6" />
+        <div className="h-4 w-full bg-slate-100 rounded mb-2" />
+        <div className="h-4 w-2/3 bg-slate-100 rounded" />
+        <div className="mt-auto pt-6 flex justify-end">
+          <div className="h-8 w-24 bg-slate-200 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type DBLocation = {
   id: string
@@ -18,7 +37,13 @@ type DBLocation = {
 
 type LoadingState = 'locating' | 'fetching' | 'done'
 
-export function HomeClient({ initialLocations }: { initialLocations: DBLocation[] }) {
+export function HomeClient({ 
+  initialLocations,
+  savedIds = []
+}: { 
+  initialLocations: DBLocation[],
+  savedIds?: string[]
+}) {
   const [searchQuery, setSearchQuery] = useState('')
   const [locations, setLocations] = useState<LocationCardProps[]>([])
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null)
@@ -174,10 +199,10 @@ export function HomeClient({ initialLocations }: { initialLocations: DBLocation[
       {/* Header */}
       <div className="mb-10 flex flex-col items-center justify-between gap-6 md:flex-row">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
             {currentCityName ? `Discover ${currentCityName}` : 'Discover Romania'}
           </h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <p className="mt-2 text-lg text-slate-600">
             {isLoading
               ? loadingState === 'locating' ? '📍 Se detectează locația ta...' : '🔎 Se caută atracții în orașul tău...'
               : `${locations.length} atracții ${currentCityName ? `în ${currentCityName}` : 'disponibile'}`}
@@ -185,61 +210,63 @@ export function HomeClient({ initialLocations }: { initialLocations: DBLocation[
         </div>
 
         <form onSubmit={handleSearch} className="w-full max-w-md relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            {isSearching
-              ? <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
-              : <Search className="h-5 w-5 text-gray-400" />}
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+            <Search className="h-5 w-5 text-slate-400" />
           </div>
           <input
             type="text"
-            className="block w-full rounded-full border-0 py-3 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 shadow-sm"
-            placeholder="Caută un oraș sau obiectiv (ex: Brașov, Castel Bran)..."
+            className="block w-full rounded-full bg-white border border-slate-200 py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent sm:text-sm shadow-sm transition-all"
+            placeholder="Caută un oraș sau obiectiv (ex: Brașov)..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            suppressHydrationWarning
           />
         </form>
       </div>
 
       {/* Location Error Banner */}
       {locationError && (
-        <div className="mb-6 rounded-md bg-yellow-50 p-4">
-          <p className="text-sm text-yellow-700">{locationError} Se afișează locațiile disponibile fără filtrare geografică.</p>
+        <div className="mb-8 rounded-xl bg-amber-50 border border-amber-200 p-4">
+          <p className="text-sm text-amber-800">{locationError} Se afișează locațiile disponibile fără filtrare geografică.</p>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24">
-          <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
-          <p className="mt-4 text-gray-500 font-medium">
-            {loadingState === 'locating' ? 'Se identifică locația ta...' : 'Se încarcă atracțiile din orașul tău...'}
-          </p>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <LocationCardSkeleton key={i} />
+          ))}
         </div>
 
       ) : dbIsEmpty ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50 py-24 text-center px-6">
-          <DatabaseZap className="mx-auto h-14 w-14 text-indigo-400" />
-          <h3 className="mt-4 text-xl font-semibold text-indigo-900">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-teal-200 bg-teal-50 py-24 text-center px-6 mt-8">
+          <DatabaseZap className="mx-auto h-14 w-14 text-teal-400" />
+          <h3 className="mt-4 text-xl font-semibold text-teal-900">
             Se încarcă baza de date națională...
           </h3>
-          <p className="mt-2 text-sm text-indigo-600 max-w-sm">
+          <p className="mt-2 text-sm text-teal-600 max-w-sm">
             Baza noastră de date cu obiective din România este în curs de populare. Revino în curând!
           </p>
         </div>
 
       ) : locations.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
           {locations.map(location => (
-            <LocationCard key={location.id} location={location} />
+            <LocationCard 
+              key={location.id} 
+              location={location} 
+              initiallySaved={savedIds.includes(location.id)} 
+            />
           ))}
         </div>
 
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 py-24 text-center">
-          <Search className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-24 text-center mt-8 shadow-sm">
+          <Search className="mx-auto h-12 w-12 text-slate-400" />
+          <h3 className="mt-4 text-lg font-semibold text-slate-900">
             Nicio locație găsită{currentCityName ? ` în ${currentCityName}` : ''}.
           </h3>
-          <p className="mt-2 text-sm text-gray-500 max-w-sm">
+          <p className="mt-2 text-sm text-slate-500 max-w-sm">
             Încearcă alt oraș sau obiectiv. Căutarea funcționează după nume (ex: &quot;Castel Bran&quot;) și după oraș (ex: &quot;Sibiu&quot;).
           </p>
         </div>

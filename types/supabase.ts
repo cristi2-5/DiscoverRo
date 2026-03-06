@@ -53,6 +53,11 @@ export interface Database {
           location_point: unknown | null // Depending on PostGIS structure, often queried as GeoJSON or WKT
           images_urls: string[] | null
           is_published: boolean | null
+          views_count: number | null
+          phone: string | null
+          website: string | null
+          instagram: string | null
+          facebook: string | null
         }
         Insert: {
           id?: string
@@ -65,6 +70,11 @@ export interface Database {
           location_point?: unknown | null
           images_urls?: string[] | null
           is_published?: boolean | null
+          views_count?: number | null
+          phone?: string | null
+          website?: string | null
+          instagram?: string | null
+          facebook?: string | null
         }
         Update: {
           id?: string
@@ -77,6 +87,11 @@ export interface Database {
           location_point?: unknown | null
           images_urls?: string[] | null
           is_published?: boolean | null
+          views_count?: number | null
+          phone?: string | null
+          website?: string | null
+          instagram?: string | null
+          facebook?: string | null
         }
         Relationships: [
           {
@@ -129,7 +144,12 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_views: {
+        Args: {
+          location_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

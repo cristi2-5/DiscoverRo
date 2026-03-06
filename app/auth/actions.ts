@@ -56,11 +56,15 @@ export async function signup(formData: FormData) {
   }
 
   if (data.user) {
-    // Insert into public.profiles table
-    // Note: Supabase sets up trigger locally sometimes, but the prompt asked:
-    // "La Sign Up, datele trebuie sa fie salvate in tabelul public.profiles (id, role, full_name)."
-    // If there is no trigger, we manually insert:
-    const { error: profileError } = await supabase
+    // We must use the service_role key to bypass RLS here because the new user 
+    // might not be fully authenticated in this exact request context (e.g. email confirmation required).
+    const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
         id: data.user.id,

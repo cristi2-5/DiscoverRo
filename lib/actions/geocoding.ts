@@ -51,3 +51,28 @@ export async function getCoordsFromCity(cityName: string) {
     return null
   }
 }
+
+// Forward Geocoding: Full Address -> Coords representation
+export async function getCoordsFromAddress(address: string) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(address)}`,
+      { headers: { 'User-Agent': 'DiscoverRoApp/1.0' } }
+    )
+    if (!res.ok) return null
+
+    const data = await res.json()
+    if (data && data.length > 0) {
+      const bestMatch = data[0]
+      return {
+        lat: parseFloat(bestMatch.lat),
+        lon: parseFloat(bestMatch.lon),
+        displayName: bestMatch.display_name,
+      }
+    }
+    return null
+  } catch (err) {
+    console.error('Error address geocoding:', err)
+    return null
+  }
+}

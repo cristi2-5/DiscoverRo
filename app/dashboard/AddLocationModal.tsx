@@ -31,6 +31,11 @@ export default function AddLocationModal({ onClose, onCreated }: AddLocationModa
   const [category, setCategory] = useState(CATEGORIES[0])
   const [cities, setCities] = useState<string[]>([])
   const [cityInput, setCityInput] = useState('')
+  const [address, setAddress] = useState('')
+  const [phone, setPhone] = useState('')
+  const [website, setWebsite] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [facebook, setFacebook] = useState('')
   const [lat, setLat] = useState<number | null>(null)
   const [lng, setLng] = useState<number | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -85,6 +90,25 @@ export default function AddLocationModal({ onClose, onCreated }: AddLocationModa
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setError('Neautentificat.'); setLoading(false); return }
 
+      let finalLat = lat
+      let finalLng = lng
+
+      if (!lat || !lng) {
+        if (address.trim() || cities.length > 0) {
+          try {
+            const { getCoordsFromAddress } = await import('@/lib/actions/geocoding')
+            const searchStr = address.trim() ? address.trim() : cities[0] + ', Romania'
+            const coords = await getCoordsFromAddress(searchStr)
+            if (coords) {
+              finalLat = coords.lat
+              finalLng = coords.lon
+            }
+          } catch (e) {
+            console.error('Geocoding error:', e)
+          }
+        }
+      }
+
       // 1. Upload images
       const imageUrls: string[] = []
       for (const file of imageFiles) {
@@ -95,14 +119,23 @@ export default function AddLocationModal({ onClose, onCreated }: AddLocationModa
           .upload(path, file, { upsert: false })
         if (uploadError) {
           console.error('Upload error:', uploadError)
-          continue
+          setError(`Eroare încărcare imagine (${file.name}): ${uploadError.message}. Ai permisiuni în Storage (RLS)?`)
+          setLoading(false)
+          return
         }
         const { data: urlData } = supabase.storage.from('location-images').getPublicUrl(path)
         imageUrls.push(urlData.publicUrl)
       }
 
       // 2. Build WKT point
-      const locationPoint = lat !== null && lng !== null ? `POINT(${lng} ${lat})` : null
+      const locationPoint = finalLat !== null && finalLng !== null ? `POINT(${finalLng} ${finalLat})` : null
+
+      // Map UI category to DB allowed enums (check constraint)
+      let dbCategory = 'altul'
+      if (category === 'Restaurant' || category === 'Cafenea') dbCategory = 'restaurant'
+      else if (category === 'Cazare') dbCategory = 'cazare'
+      else if (category === 'Natură' || category === 'Parc') dbCategory = 'natura'
+      else if (category === 'Muzeu') dbCategory = 'muzeu'
 
       // 3. Insert location
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,11 +145,16 @@ export default function AddLocationModal({ onClose, onCreated }: AddLocationModa
           owner_id: user.id,
           title: title.trim(),
           description: description.trim(),
-          category,
+          category: dbCategory,
+          address: address.trim() || null,
           cities,
           location_point: locationPoint,
           images_urls: imageUrls,
           is_published: true,
+          phone: phone.trim() || null,
+          website: website.trim() || null,
+          instagram: instagram.trim() || null,
+          facebook: facebook.trim() || null,
         })
 
       if (insertError) {
@@ -241,6 +279,74 @@ export default function AddLocationModal({ onClose, onCreated }: AddLocationModa
                 onKeyDown={handleCityKeyDown}
                 placeholder={cities.length === 0 ? 'ex: cluj-napoca' : ''}
                 className="flex-1 min-w-[120px] bg-transparent text-white placeholder-gray-500 text-sm outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Adresă (opțional)</label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="ex: Strada Sforii nr. 1, Brașov"
+              className="w-full rounded-lg px-4 py-2.5 text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+            />
+            <p className="text-xs text-gray-500 mt-1">Dacă lași coordonatele goale, vom încerca să le deducem din adresă.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Telefon (opțional)</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="ex: +40 712 345 678"
+                className="w-full rounded-lg px-4 py-2.5 text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+            </div>
+            
+            {/* Website */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Website (opțional)</label>
+              <input
+                type="url"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="ex: https://locatie.ro"
+                className="w-full rounded-lg px-4 py-2.5 text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+            </div>
+
+            {/* Instagram */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Instagram (opțional)</label>
+              <input
+                type="text"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="ex: @locatie_ig"
+                className="w-full rounded-lg px-4 py-2.5 text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+            </div>
+
+            {/* Facebook */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Facebook (opțional)</label>
+              <input
+                type="text"
+                value={facebook}
+                onChange={(e) => setFacebook(e.target.value)}
+                placeholder="ex: https://facebook.com/locatie"
+                className="w-full rounded-lg px-4 py-2.5 text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
               />
             </div>
           </div>

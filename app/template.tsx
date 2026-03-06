@@ -1,0 +1,18 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { ReactNode } from 'react'
+
+export default function Template({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="pt-16" // padding to account for fixed navbar height
+    >
+      {children}
+    </motion.div>
+  )
+}

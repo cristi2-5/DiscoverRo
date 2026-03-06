@@ -16,10 +16,15 @@ export default function MapPicker({ lat, lng, onPick }: MapPickerProps) {
   const markerRef = useRef<any>(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined' || mapRef.current) return
+    if (typeof window === 'undefined') return
+
+    let isMounted = true
 
     // Dynamically import Leaflet to avoid SSR issues
     import('leaflet').then((L) => {
+      if (!isMounted) return // Prevent initializing if unmounted while loading
+      if (mapRef.current) return // Already initialized
+
       // Fix default marker icons path issue with Next.js/webpack
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -30,6 +35,13 @@ export default function MapPicker({ lat, lng, onPick }: MapPickerProps) {
       })
 
       if (!containerRef.current) return
+      
+      // Clear container strictly for Leaflet remounts in Strict Mode
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const container = containerRef.current as any
+      if (container._leaflet_id) {
+        container._leaflet_id = null
+      }
 
       const map = L.map(containerRef.current).setView(
         [lat ?? 45.9432, lng ?? 24.9668], // Center of Romania as default
@@ -60,6 +72,7 @@ export default function MapPicker({ lat, lng, onPick }: MapPickerProps) {
     })
 
     return () => {
+      isMounted = false
       if (mapRef.current) {
         mapRef.current.remove()
         mapRef.current = null
