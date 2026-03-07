@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, DatabaseZap, ListFilter } from 'lucide-react'
+import { Search, DatabaseZap, ListFilter, MapPin } from 'lucide-react'
 import { LocationCard, LocationCardProps } from '@/components/LocationCard'
 import { calculateDistance, extractCoordinates } from '@/lib/utils/distance'
 
@@ -10,17 +10,17 @@ const CATEGORIES = ['Toate', 'Istoric', 'Cultură', 'Natură', 'Religios', 'Gast
 
 function LocationCardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm animate-pulse">
-      <div className="aspect-[4/3] w-full bg-slate-200 relative">
-        <div className="absolute right-3 top-3 h-6 w-16 bg-slate-300 rounded-full" />
+    <div className="flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm animate-pulse">
+      <div className="aspect-[4/3] w-full bg-slate-200 dark:bg-slate-800 relative">
+        <div className="absolute right-3 top-3 h-6 w-16 bg-slate-300 dark:bg-slate-700 rounded-full" />
       </div>
-      <div className="flex flex-1 flex-col p-5 bg-white">
-        <div className="h-5 w-24 bg-slate-200 rounded mb-4" />
-        <div className="h-7 w-3/4 bg-slate-300 rounded mb-6" />
-        <div className="h-4 w-full bg-slate-100 rounded mb-2" />
-        <div className="h-4 w-2/3 bg-slate-100 rounded" />
+      <div className="flex flex-1 flex-col p-5 bg-white dark:bg-slate-900">
+        <div className="h-5 w-24 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
+        <div className="h-7 w-3/4 bg-slate-300 dark:bg-slate-700 rounded mb-6" />
+        <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded mb-2" />
+        <div className="h-4 w-2/3 bg-slate-100 dark:bg-slate-800 rounded" />
         <div className="mt-auto pt-6 flex justify-end">
-          <div className="h-8 w-24 bg-slate-200 rounded-lg" />
+          <div className="h-8 w-24 bg-slate-200 dark:bg-slate-800 rounded-lg" />
         </div>
       </div>
     </div>
@@ -254,6 +254,46 @@ export function HomeClient({
     }
   }
 
+  const handleNearMe = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocația nu este suportată de browser-ul tău.')
+      return
+    }
+
+    startTransition(() => {
+      setLoadingState('locating')
+    })
+    
+    // Clear any existing search queries as we prioritize GPS
+    setSearchQuery('')
+    setCurrentCityName('Tine') 
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('lat', position.coords.latitude.toString())
+        params.set('lon', position.coords.longitude.toString())
+        // Resetting standard filters to make sure geosearch is clean, unless user strictly wanted a category
+        if (category === 'Toate') {
+          params.delete('category')
+        }
+        
+        startTransition(() => {
+          router.push(`/?${params.toString()}`, { scroll: false })
+          setLoadingState('done')
+        })
+      },
+      (error) => {
+        console.error("Geolocation error:", error)
+        alert('Nu am putut obține locația. Asigură-te că ne-ai dat permisiunea!')
+        startTransition(() => {
+          setLoadingState('done')
+        })
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }
+
   const isLoading = loadingState !== 'done' || isSearching || isPending
 
   return (
@@ -262,10 +302,10 @@ export function HomeClient({
       {/* Header */}
       <div className="mb-10 flex flex-col items-center justify-between gap-6 md:flex-row">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             {currentCityName ? `Discover ${currentCityName}` : 'Discover Romania'}
           </h1>
-          <p className="mt-2 text-lg text-slate-600">
+          <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">
             {isLoading
               ? loadingState === 'locating' ? '📍 Se detectează locația ta...' : '🔎 Se caută atracții în orașul tău...'
               : `${locations.length} atracții ${currentCityName ? `în ${currentCityName}` : 'disponibile'}`}
@@ -274,11 +314,11 @@ export function HomeClient({
 
         <form onSubmit={handleSearch} className="w-full max-w-md relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-            <Search className="h-5 w-5 text-slate-400" />
+            <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
           </div>
           <input
             type="text"
-            className="block w-full rounded-full bg-white border border-slate-200 py-3.5 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent sm:text-sm shadow-sm transition-all"
+            className="block w-full rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-3.5 pl-12 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent sm:text-sm shadow-sm transition-all"
             placeholder="Caută un oraș sau obiectiv (ex: Brașov)..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -288,7 +328,7 @@ export function HomeClient({
       </div>
 
       {/* Filters & Sorting */}
-      <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div className="flex flex-wrap items-center gap-2">
           {CATEGORIES.map(cat => (
             <button
@@ -297,25 +337,35 @@ export function HomeClient({
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 category === cat 
                   ? 'bg-amber-500 text-white shadow-sm' 
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
               {cat}
             </button>
           ))}
         </div>
-        
         <div className="flex items-center gap-2">
-          <ListFilter className="h-4 w-4 text-slate-400" />
-          <select
-            value={sort}
-            onChange={(e) => handleFilterChange(category, e.target.value)}
-            className="block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-teal-500 sm:text-sm sm:leading-6"
+          <button
+            onClick={handleNearMe}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2 shadow-sm whitespace-nowrap"
+            disabled={isPending || loadingState === 'locating'}
           >
-            <option value="views">Cele mai văzute</option>
-            <option value="likes">Cele mai apreciate</option>
-            <option value="newest">Cele mai noi</option>
-          </select>
+            <MapPin className={`h-4 w-4 ${loadingState === 'locating' ? 'animate-pulse' : ''}`} />
+            {loadingState === 'locating' ? 'Lângă mine...' : 'Lângă mine'}
+          </button>
+        
+          <div className="flex items-center gap-2">
+            <ListFilter className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <select
+              value={sort}
+              onChange={(e) => handleFilterChange(category, e.target.value)}
+              className="block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 dark:text-white bg-white dark:bg-slate-900 ring-1 ring-inset ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-amber-500 sm:text-sm sm:leading-6"
+            >
+              <option value="views">Cele mai văzute</option>
+              <option value="likes">Cele mai apreciate</option>
+              <option value="newest">Cele mai noi</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -334,12 +384,12 @@ export function HomeClient({
         </div>
 
       ) : dbIsEmpty ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-teal-200 bg-teal-50 py-24 text-center px-6 mt-8">
-          <DatabaseZap className="mx-auto h-14 w-14 text-teal-400" />
-          <h3 className="mt-4 text-xl font-semibold text-teal-900">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-teal-200 dark:border-teal-900/50 bg-teal-50 dark:bg-teal-950/20 py-24 text-center px-6 mt-8">
+          <DatabaseZap className="mx-auto h-14 w-14 text-teal-400 dark:text-teal-600" />
+          <h3 className="mt-4 text-xl font-semibold text-teal-900 dark:text-teal-400">
             Se încarcă baza de date națională...
           </h3>
-          <p className="mt-2 text-sm text-teal-600 max-w-sm">
+          <p className="mt-2 text-sm text-teal-600 dark:text-teal-500/80 max-w-sm">
             Baza noastră de date cu obiective din România este în curs de populare. Revino în curând!
           </p>
         </div>
@@ -356,12 +406,12 @@ export function HomeClient({
         </div>
 
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 py-24 text-center mt-8 shadow-sm">
-          <Search className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 py-24 text-center mt-8 shadow-sm">
+          <Search className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-600" />
+          <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-300">
             Nicio locație găsită{currentCityName ? ` în ${currentCityName}` : ''}.
           </h3>
-          <p className="mt-2 text-sm text-slate-500 max-w-sm">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-500 max-w-sm">
             Încearcă alt oraș sau obiectiv. Căutarea funcționează după nume (ex: &quot;Castel Bran&quot;) și după oraș (ex: &quot;Sibiu&quot;).
           </p>
         </div>

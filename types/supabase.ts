@@ -16,6 +16,7 @@ export interface Database {
           role: 'explorer' | 'merchant' | null
           trial_end_date: string | null
           is_premium: boolean | null
+          is_public: boolean | null
         }
         Insert: {
           id: string
@@ -23,6 +24,7 @@ export interface Database {
           role?: 'explorer' | 'merchant' | null
           trial_end_date?: string | null
           is_premium?: boolean | null
+          is_public?: boolean | null
         }
         Update: {
           id?: string
@@ -30,6 +32,7 @@ export interface Database {
           role?: 'explorer' | 'merchant' | null
           trial_end_date?: string | null
           is_premium?: boolean | null
+          is_public?: boolean | null
         }
         Relationships: [
           {
@@ -141,6 +144,48 @@ export interface Database {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      reviews: {
+        Row: {
+          id: string
+          location_id: string
+          user_id: string
+          rating: number
+          comment: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          location_id: string
+          user_id: string
+          rating: number
+          comment: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          location_id?: string
+          user_id?: string
+          rating?: number
+          comment?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           }
         ]

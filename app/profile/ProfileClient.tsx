@@ -5,7 +5,7 @@ import { User, ShieldCheck, Mail, LogOut as LogOutIcon, Edit2 } from 'lucide-rea
 import { updateProfileName } from '@/lib/actions/profile'
 import { signout } from '@/app/auth/actions'
 
-export function ProfileClient({ initialProfile }: { initialProfile: any }) {
+export function ProfileClient({ initialProfile }: { initialProfile: { full_name?: string | null; email?: string; role?: string; is_premium?: boolean } }) {
   const [isEditing, setIsEditing] = useState(false)
   const [fullName, setFullName] = useState(initialProfile?.full_name || '')
   const [isPending, startTransition] = useTransition()

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { LocationCardProps } from '@/components/LocationCard'
-import { MapPin, Compass, Car, Navigation, Map as MapIcon, MoreVertical } from 'lucide-react'
+import { Compass, Car, Navigation, Map as MapIcon, Globe, MapPin, Copy, Check } from 'lucide-react'
 import { buildOptimizedItinerary, ItineraryCluster } from '@/lib/utils/routing'
 import { SaveLocationButton } from '@/components/SaveLocationButton'
+import { togglePlanVisibility } from '@/lib/actions/planner'
 import Link from 'next/link'
 import RoutingMapWrapper from '@/components/RoutingMapWrapper'
 
@@ -14,10 +15,21 @@ type SavedPlanItem = {
   location: any
 }
 
-export function PlanClient({ initialPlan }: { initialPlan: SavedPlanItem[] }) {
+export function PlanClient({ 
+  initialPlan, 
+  isPublicInitial, 
+  userId 
+}: { 
+  initialPlan: SavedPlanItem[]
+  isPublicInitial: boolean
+  userId: string
+}) {
   const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null)
   const [clusters, setClusters] = useState<ItineraryCluster[]>([])
   const [isMapMode, setIsMapMode] = useState(false)
+  const [isPublic, setIsPublic] = useState(isPublicInitial)
+  const [isToggling, setIsToggling] = useState(false)
+  const [copied, setCopied] = useState(false)
   
   // Format to standard LocationCard prop (filtering out any null entries)
   const formattedPlan = initialPlan
@@ -68,6 +80,23 @@ export function PlanClient({ initialPlan }: { initialPlan: SavedPlanItem[] }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlan.length])
+
+  const handleTogglePublic = async () => {
+    setIsToggling(true)
+    const newStatus = !isPublic
+    const res = await togglePlanVisibility(newStatus)
+    if (res.success) {
+      setIsPublic(newStatus)
+    }
+    setIsToggling(false)
+  }
+
+  const copyLink = () => {
+    const url = `${window.location.origin}/plan/${userId}`
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   // The Timeline Component for a Single Location
   const renderTimelineNode = (step: any, index: number, isLast: boolean) => {
@@ -128,15 +157,43 @@ export function PlanClient({ initialPlan }: { initialPlan: SavedPlanItem[] }) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 w-full">
-      <div className="mb-10 flex flex-col items-center justify-between gap-6 md:flex-row border-b border-gray-200 pb-8">
+      <div className="mb-10 flex flex-col items-center justify-between gap-6 md:flex-row border-b border-gray-200 dark:border-slate-800 pb-8">
         <div className="text-center md:text-left">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl flex items-center justify-center md:justify-start">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl flex items-center justify-center md:justify-start">
             <MapPin className="mr-3 h-8 w-8 text-rose-500" />
             Itinerarul Tău Optimizat
           </h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <p className="mt-2 text-lg text-gray-600 dark:text-slate-400">
             Atracțiile au fost grupate și sortate pe cel mai scurt traseu (Nearest-Neighbor).
           </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-4">
+             <button
+                onClick={handleTogglePublic}
+                disabled={isToggling}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${isPublic ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-slate-700'}`}
+             >
+                <span className="sr-only">Schimbă vizibilitatea planului</span>
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPublic ? 'translate-x-5' : 'translate-x-0'}`} />
+             </button>
+             <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
+                {isPublic ? (
+                  <><Globe className="h-4 w-4 text-emerald-500" /> Plan Public</>
+                ) : (
+                  <><MapPin className="h-4 w-4 text-gray-400" /> Plan Privat</>
+                )}
+             </span>
+
+             {isPublic && (
+                <button
+                  onClick={copyLink}
+                  className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'Copiat!' : 'Copiază Link'}
+                </button>
+             )}
+          </div>
         </div>
         
         <div className="flex bg-gray-100 p-1 rounded-lg">

@@ -1,4 +1,4 @@
-import { getLocations } from "@/lib/actions/locations";
+import { getLocations, getLocationsSortedByDistance } from "@/lib/actions/locations";
 import { HomeClient } from "@/app/HomeClient";
 import { createClient } from "@/utils/supabase/server";
 
@@ -6,12 +6,23 @@ import { createClient } from "@/utils/supabase/server";
 // if we want locations to be updated immediately after insertion in DB
 export const dynamic = 'force-dynamic'
 
-export default async function Home(props: { searchParams: Promise<{ category?: string; sort?: string }> }) {
+export default async function Home(props: { searchParams: Promise<{ category?: string; sort?: string; lat?: string; lon?: string }> }) {
   const searchParams = await props.searchParams;
   const category = searchParams.category || 'Toate';
   const sort = searchParams.sort || 'views';
+  const lat = searchParams.lat ? parseFloat(searchParams.lat) : null;
+  const lon = searchParams.lon ? parseFloat(searchParams.lon) : null;
 
-  const locations = await getLocations(category, sort);
+  let locations = [];
+  if (lat && lon) {
+     locations = await getLocationsSortedByDistance(lat, lon);
+     // Apply category filtering manually on the server if using distance RPC
+     if (category !== 'Toate') {
+       locations = locations.filter((loc: { category: string | null }) => loc.category === category);
+     }
+  } else {
+     locations = await getLocations(category, sort);
+  }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

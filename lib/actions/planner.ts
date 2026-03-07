@@ -118,3 +118,84 @@ export async function getUserPlan() {
     }))
     .filter(item => item.location !== null && item.location !== undefined)
 }
+
+export async function togglePlanVisibility(isPublic: boolean) {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Neautentificat' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_public: isPublic })
+    .eq('id', user.id)
+
+  if (error) {
+    console.error('Error toggling plan visibility:', error)
+    return { error: 'Eroare la actualizarea vizibilității planului.' }
+  }
+
+  revalidatePath('/plan')
+  return { success: true }
+}
+
+export async function getPlanVisibility() {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_public')
+    .eq('id', user.id)
+    .single()
+
+  if (error || !data) {
+    return false
+  }
+
+  return !!data.is_public
+}
+
+export async function getPublicPlan(targetUserId: string) {
+  const adminClient = await getAdminClient()
+  if (!adminClient) return { error: 'Eroare configurare adminClient' }
+
+  // Check if profile is public
+  const { data: profileData, error: profileError } = await adminClient
+    .from('profiles')
+    .select('is_public, full_name')
+    .eq('id', targetUserId)
+    .single()
+
+  if (profileError || !profileData || !profileData.is_public) {
+    return { error: 'Acest plan nu este public sau utilizatorul nu există.' }
+  }
+
+  const { data: planItems, error } = await adminClient
+    .from('planner_items')
+    .select(`
+      id, visit_order, location_id,
+      locations (
+        id, title, description, category, address, location_point, images_urls
+      )
+    `)
+    .eq('user_id', targetUserId)
+    .order('visit_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching public plan:', error)
+    return { error: 'Eroare la preluarea planului.' }
+  }
+
+  const items = planItems
+    .map(item => ({
+       planner_id: item.id,
+       visit_order: item.visit_order,
+       location: Array.isArray(item.locations) ? item.locations[0] : item.locations
+    }))
+    .filter(item => item.location !== null && item.location !== undefined)
+
+  return { items, authorName: profileData.full_name || 'Utilizator Anomin' }
+}

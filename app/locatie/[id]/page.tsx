@@ -4,6 +4,10 @@ import { notFound } from 'next/navigation'
 import { MapPin, ArrowLeft, Image as ImageIcon, Phone, Globe, Instagram, Facebook } from 'lucide-react'
 import Link from 'next/link'
 import MapWrapper from '@/components/MapWrapper'
+import ReviewsSection from '@/components/ReviewsSection'
+import { getReviews, getAverageRating } from '@/lib/actions/reviews'
+import { createClient } from '@/utils/supabase/server'
+import { Star } from 'lucide-react'
 
 // Resolve a commons.wikimedia.org/wiki/Special:FilePath URL to a direct upload.wikimedia.org URL
 async function resolveWikimediaUrl(url: string): Promise<string> {
@@ -109,8 +113,14 @@ export default async function LocationDetailsPage({
     ? await Promise.all(location.images_urls.slice(1).map(resolveWikimediaUrl))
     : []
 
+  // Fetch current user and reviews
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const reviews = await getReviews(id)
+  const ratingData = await getAverageRating(id)
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 pb-24">
       {/* Hero Section */}
       <div className="relative h-[40vh] min-h-[300px] w-full md:h-[50vh]">
         <img
@@ -124,7 +134,7 @@ export default async function LocationDetailsPage({
         <div className="absolute top-0 left-0 w-full p-4 md:p-8">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/30"
+            className="inline-flex items-center gap-2 rounded-full bg-white/20 dark:bg-slate-900/50 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/30 dark:hover:bg-slate-900/80"
           >
             <ArrowLeft className="h-4 w-4" />
             Înapoi
@@ -138,6 +148,15 @@ export default async function LocationDetailsPage({
           <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-md">
             {location.title}
           </h1>
+          
+          {ratingData.count > 0 && (
+            <div className="mt-3 flex items-center gap-1.5 bg-white/10 w-fit px-3 py-1.5 rounded-full backdrop-blur-sm">
+              <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+              <span className="font-bold text-white text-lg leading-none">{ratingData.average.toFixed(1)}</span>
+              <span className="text-white/80 text-sm ml-1">({ratingData.count} {ratingData.count === 1 ? 'recenzie' : 'recenzii'})</span>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-200 sm:text-base font-medium">
             <MapPin className="h-5 w-5 text-indigo-400 shrink-0" />
             <span>{location.address}</span>
@@ -152,12 +171,12 @@ export default async function LocationDetailsPage({
           {/* Left Column: Description & Gallery */}
           <div className="space-y-10 lg:col-span-2">
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">Despre acest loc</h2>
-              <div className="prose prose-lg prose-indigo max-w-none text-gray-600 leading-relaxed">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Despre acest loc</h2>
+              <div className="prose prose-lg prose-indigo dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed">
                 {location.description ? (
                   <p>{location.description}</p>
                 ) : (
-                  <p className="italic text-gray-400">Nicio descriere disponibilă.</p>
+                  <p className="italic text-gray-400 dark:text-gray-500">Nicio descriere disponibilă.</p>
                 )}
               </div>
 
@@ -167,7 +186,7 @@ export default async function LocationDetailsPage({
                   {location.phone && (
                     <a 
                       href={`tel:${location.phone}`}
-                      className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 ring-1 ring-inset ring-indigo-700/10"
+                      className="inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-5 py-2.5 text-sm font-semibold text-indigo-700 dark:text-indigo-400 transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50 ring-1 ring-inset ring-indigo-700/10 dark:ring-indigo-500/20"
                     >
                       <Phone className="h-4 w-4" />
                       Sună
@@ -178,9 +197,9 @@ export default async function LocationDetailsPage({
                       href={location.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 ring-1 ring-inset ring-gray-300 shadow-sm"
+                      className="inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-slate-700 ring-1 ring-inset ring-gray-300 dark:ring-slate-700 shadow-sm"
                     >
-                      <Globe className="h-4 w-4 text-gray-500" />
+                      <Globe className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                       Website
                     </a>
                   )}
@@ -189,7 +208,7 @@ export default async function LocationDetailsPage({
                       href={location.instagram.startsWith('http') ? location.instagram : `https://instagram.com/${location.instagram.replace('@', '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-pink-50 text-pink-600 transition-colors hover:bg-pink-100 ring-1 ring-inset ring-pink-600/10"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 transition-colors hover:bg-pink-100 dark:hover:bg-pink-900/50 ring-1 ring-inset ring-pink-600/10 dark:ring-pink-500/20"
                       title="Instagram"
                     >
                       <Instagram className="h-5 w-5" />
@@ -200,7 +219,7 @@ export default async function LocationDetailsPage({
                       href={location.facebook}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100 ring-1 ring-inset ring-blue-600/10"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50 ring-1 ring-inset ring-blue-600/10 dark:ring-blue-500/20"
                       title="Facebook"
                     >
                       <Facebook className="h-5 w-5" />
@@ -212,44 +231,49 @@ export default async function LocationDetailsPage({
 
             {resolvedGalleryUrls.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
-                  <ImageIcon className="h-6 w-6 text-indigo-500" />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight flex items-center gap-2">
+                  <ImageIcon className="h-6 w-6 text-indigo-500 dark:text-indigo-400" />
                   Galerie
                 </h2>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   {resolvedGalleryUrls.map((imgUrl: string, idx: number) => (
-                    <div key={idx} className="aspect-w-1 aspect-h-1 overflow-hidden rounded-xl bg-gray-100 shadow-sm">
+                    <div key={idx} className="aspect-w-1 aspect-h-1 overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800 shadow-sm">
                       <img src={imgUrl} alt="Gallery item" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform hover:scale-105 duration-300" />
                     </div>
                   ))}
                 </div>
               </section>
             )}
+
+            {/* Reviews Section */}
+            <section>
+              <ReviewsSection locationId={id} reviews={reviews} currentUser={user} />
+            </section>
           </div>
 
           {/* Right Column: Map */}
           <div className="space-y-8">
-            <div className="rounded-3xl bg-white p-6 shadow-xl ring-1 ring-gray-900/5 sticky top-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-indigo-600" />
+            <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-xl ring-1 ring-gray-900/5 dark:ring-slate-800 sticky top-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 Locație
               </h2>
               
               <div className="mb-6 space-y-4">
-                <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Adresă</h3>
-                  <p className="mt-1 font-medium text-gray-900">{location.address || 'Adresă indisponibilă'}</p>
+                <div className="rounded-lg bg-gray-50 dark:bg-slate-800 p-4 border border-gray-100 dark:border-slate-700">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Adresă</h3>
+                  <p className="mt-1 font-medium text-gray-900 dark:text-white">{location.address || 'Adresă indisponibilă'}</p>
                 </div>
                 {coords && (
-                  <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Coordonate</h3>
-                    <p className="mt-1 font-mono text-sm text-gray-700">{coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}</p>
+                  <div className="rounded-lg bg-gray-50 dark:bg-slate-800 p-4 border border-gray-100 dark:border-slate-700">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Coordonate</h3>
+                    <p className="mt-1 font-mono text-sm text-gray-700 dark:text-gray-300">{coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}</p>
                   </div>
                 )}
               </div>
 
               {coords ? (
-                <div className="overflow-hidden rounded-2xl relative z-10">
+                <div className="overflow-hidden rounded-2xl relative z-10 dark:opacity-90">
                   <MapWrapper 
                     lat={coords.lat} 
                     lon={coords.lon} 
@@ -257,8 +281,8 @@ export default async function LocationDetailsPage({
                   />
                 </div>
               ) : (
-                <div className="flex h-48 items-center justify-center rounded-2xl bg-gray-100 border border-dashed border-gray-300">
-                  <p className="text-sm font-medium text-gray-500">Coordonate indisponibile</p>
+                <div className="flex h-48 items-center justify-center rounded-2xl bg-gray-100 dark:bg-slate-800 border border-dashed border-gray-300 dark:border-slate-700">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Coordonate indisponibile</p>
                 </div>
               )}
             </div>
