@@ -2,6 +2,14 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+async function getAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !supabaseServiceKey) return null
+  return createAdminClient(supabaseUrl, supabaseServiceKey)
+}
 
 export async function saveToPlan(locationId: string) {
   const supabase = await createClient()
@@ -37,6 +45,14 @@ export async function saveToPlan(locationId: string) {
     return { error: `Eroare la salvarea locației: ${error.message}` }
   }
 
+  // Increment likes count bypassing RLS
+  const adminClient = await getAdminClient()
+  if (adminClient) {
+    const { data: locData } = await adminClient.from('locations').select('likes_count').eq('id', locationId).single()
+    const currentLikes = locData?.likes_count || 0
+    await adminClient.from('locations').update({ likes_count: currentLikes + 1 }).eq('id', locationId)
+  }
+
   revalidatePath('/plan')
   revalidatePath('/')
   return { success: true }
@@ -57,6 +73,14 @@ export async function removeFromPlan(locationId: string) {
   if (error) {
     console.error('Delete plan error:', error)
     return { error: 'Eroare la ștergerea locației din plan.' }
+  }
+
+  // Decrement likes count bypassing RLS
+  const adminClient = await getAdminClient()
+  if (adminClient) {
+    const { data: locData } = await adminClient.from('locations').select('likes_count').eq('id', locationId).single()
+    const currentLikes = locData?.likes_count || 0
+    await adminClient.from('locations').update({ likes_count: Math.max(0, currentLikes - 1) }).eq('id', locationId)
   }
 
   revalidatePath('/plan')

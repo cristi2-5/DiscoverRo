@@ -54,6 +54,8 @@ export interface Database {
           images_urls: string[] | null
           is_published: boolean | null
           views_count: number | null
+          likes_count: number | null
+          created_at: string | null
           phone: string | null
           website: string | null
           instagram: string | null
@@ -71,6 +73,8 @@ export interface Database {
           images_urls?: string[] | null
           is_published?: boolean | null
           views_count?: number | null
+          likes_count?: number | null
+          created_at?: string | null
           phone?: string | null
           website?: string | null
           instagram?: string | null
@@ -88,6 +92,8 @@ export interface Database {
           images_urls?: string[] | null
           is_published?: boolean | null
           views_count?: number | null
+          likes_count?: number | null
+          created_at?: string | null
           phone?: string | null
           website?: string | null
           instagram?: string | null

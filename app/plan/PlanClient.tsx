@@ -97,7 +97,7 @@ export function PlanClient({ initialPlan }: { initialPlan: SavedPlanItem[] }) {
            <Link href={`/locatie/${location.id}`} className="block group">
              <div className="flex flex-col sm:flex-row gap-4 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-indigo-100">
                <div className="relative h-24 w-24 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-xl">
-                 <img src={imageUrl} alt={location.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                 <img src={imageUrl} alt={location.title} referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                  <SaveLocationButton locationId={location.id} initiallySaved={true} />
                </div>
                

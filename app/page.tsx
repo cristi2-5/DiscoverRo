@@ -6,8 +6,12 @@ import { createClient } from "@/utils/supabase/server";
 // if we want locations to be updated immediately after insertion in DB
 export const dynamic = 'force-dynamic'
 
-export default async function Home() {
-  const locations = await getLocations();
+export default async function Home(props: { searchParams: Promise<{ category?: string; sort?: string }> }) {
+  const searchParams = await props.searchParams;
+  const category = searchParams.category || 'Toate';
+  const sort = searchParams.sort || 'views';
+
+  const locations = await getLocations(category, sort);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -24,7 +28,12 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <HomeClient initialLocations={locations || []} savedIds={savedIds} />
+      <HomeClient 
+        initialLocations={locations || []} 
+        savedIds={savedIds} 
+        initialCategory={category}
+        initialSort={sort}
+      />
     </main>
   );
 }

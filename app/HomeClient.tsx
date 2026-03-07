@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Search, DatabaseZap } from 'lucide-react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Search, DatabaseZap, ListFilter } from 'lucide-react'
 import { LocationCard, LocationCardProps } from '@/components/LocationCard'
 import { calculateDistance, extractCoordinates } from '@/lib/utils/distance'
+
+const CATEGORIES = ['Toate', 'Istoric', 'Cultură', 'Natură', 'Religios', 'Gastronomie', 'Agrement']
 
 function LocationCardSkeleton() {
   return (
@@ -39,11 +42,22 @@ type LoadingState = 'locating' | 'fetching' | 'done'
 
 export function HomeClient({ 
   initialLocations,
-  savedIds = []
+  savedIds = [],
+  initialCategory = 'Toate',
+  initialSort = 'views'
 }: { 
   initialLocations: DBLocation[],
-  savedIds?: string[]
+  savedIds?: string[],
+  initialCategory?: string,
+  initialSort?: string
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
+
+  const [category, setCategory] = useState(initialCategory)
+  const [sort, setSort] = useState(initialSort)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [locations, setLocations] = useState<LocationCardProps[]>([])
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null)
@@ -114,12 +128,14 @@ export function HomeClient({
 
             // Step 2: Filter DB strictly by detected city
             const { searchLocationsByCity } = await import('@/lib/actions/locations')
-            const cityResults = await searchLocationsByCity(detectedCity)
+            const cityResults = await searchLocationsByCity(detectedCity, initialCategory, initialSort)
 
             if (cityResults && cityResults.length > 0) {
-              // Step 3: Sort locally by distance
+              // Step 3: Sort locally by distance (only if sort=views, otherwise trust DB order)
               const cards = mapToCards(cityResults as DBLocation[], { lat, lon }, 'db')
-              cards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+              if (initialSort === 'views') {
+                cards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+              }
               setLocations(cards)
               setLoadingState('done')
               return
@@ -128,7 +144,9 @@ export function HomeClient({
 
           // Fallback: no city match → show all sorted by distance (client-side)
           const allCards = mapToCards(initialLocations, { lat, lon }, 'db')
-          allCards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+          if (initialSort === 'views') {
+            allCards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+          }
           // Show only locations within 30km radius as a reasonable local scope
           const nearby = allCards.filter(c => (c.distanceKm ?? null) !== null && (c.distanceKm as number) <= 30)
           setLocations(nearby.length > 0 ? nearby : allCards.slice(0, 40))
@@ -167,17 +185,17 @@ export function HomeClient({
       const { searchLocationsByCity, searchLocationsByTitle } = await import('@/lib/actions/locations')
 
       // Try city search first (@> operator on cities[])
-      let results = await searchLocationsByCity(q)
+      let results = await searchLocationsByCity(q, category, sort)
 
       // Fallback: title ilike
       if (!results || results.length === 0) {
-        results = await searchLocationsByTitle(q)
+        results = await searchLocationsByTitle(q, category, sort)
       }
 
       if (results && results.length > 0) {
         setCurrentCityName(q)
         const cards = mapToCards(results as DBLocation[], userCoords, 'db')
-        if (userCoords) {
+        if (userCoords && sort === 'views') {
           cards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
         }
         setLocations(cards)
@@ -191,7 +209,52 @@ export function HomeClient({
     }
   }
 
-  const isLoading = loadingState !== 'done' || isSearching
+  const handleFilterChange = async (newCategory: string, newSort: string) => {
+    setCategory(newCategory)
+    setSort(newSort)
+
+    const params = new URLSearchParams(searchParams.toString())
+    if (newCategory !== 'Toate') params.set('category', newCategory)
+    else params.delete('category')
+    
+    if (newSort !== 'views') params.set('sort', newSort)
+    else params.delete('sort')
+    
+    startTransition(() => {
+      router.push(`/?${params.toString()}`, { scroll: false })
+    })
+
+    setIsSearching(true)
+    try {
+      const q = searchQuery.trim() || currentCityName
+      if (q) {
+        const { searchLocationsByCity, searchLocationsByTitle } = await import('@/lib/actions/locations')
+        let results = await searchLocationsByCity(q, newCategory, newSort)
+        if (!results || results.length === 0) {
+          results = await searchLocationsByTitle(q, newCategory, newSort)
+        }
+        if (results && results.length > 0) {
+          const cards = mapToCards(results as DBLocation[], userCoords, 'db')
+          if (userCoords && newSort === 'views') cards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+          setLocations(cards)
+        } else {
+          setLocations([])
+        }
+      } else {
+         const { getLocations } = await import('@/lib/actions/locations')
+         const results = await getLocations(newCategory, newSort)
+         const cards = mapToCards(results as DBLocation[], userCoords, 'db')
+         if (userCoords && newSort === 'views') cards.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
+         setLocations(cards)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const isLoading = loadingState !== 'done' || isSearching || isPending
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -224,6 +287,38 @@ export function HomeClient({
         </form>
       </div>
 
+      {/* Filters & Sorting */}
+      <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              onClick={() => handleFilterChange(cat, sort)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                category === cat 
+                  ? 'bg-amber-500 text-white shadow-sm' 
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <ListFilter className="h-4 w-4 text-slate-400" />
+          <select
+            value={sort}
+            onChange={(e) => handleFilterChange(category, e.target.value)}
+            className="block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-teal-500 sm:text-sm sm:leading-6"
+          >
+            <option value="views">Cele mai văzute</option>
+            <option value="likes">Cele mai apreciate</option>
+            <option value="newest">Cele mai noi</option>
+          </select>
+        </div>
+      </div>
+
       {/* Location Error Banner */}
       {locationError && (
         <div className="mb-8 rounded-xl bg-amber-50 border border-amber-200 p-4">
@@ -250,7 +345,7 @@ export function HomeClient({
         </div>
 
       ) : locations.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
+        <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8 transition-opacity duration-300 ${isPending || isSearching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
           {locations.map(location => (
             <LocationCard 
               key={location.id} 

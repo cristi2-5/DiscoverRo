@@ -93,7 +93,7 @@ function LocationCard({ location, onDelete }: { location: Location; onDelete: ()
       {/* Thumbnail */}
       <div className="relative h-40 bg-gray-800">
         {thumb
-          ? <Image src={thumb} alt={location.title ?? ''} fill className="object-cover" unoptimized />
+          ? <Image src={thumb} alt={location.title ?? ''} fill className="object-cover" referrerPolicy="no-referrer" unoptimized />
           : (
             <div className="absolute inset-0 flex items-center justify-center text-4xl">
               {location.category === 'restaurant' ? '🍽️'

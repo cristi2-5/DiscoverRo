@@ -4,6 +4,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+async function resolveWikiUrl(url: string): Promise<string> {
+  if (!url.includes('Special:FilePath')) return url;
+  try {
+    const res = await fetch(url, { method: 'HEAD', redirect: 'manual' });
+    if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
+      const location = res.headers.get('location');
+      if (location) return location;
+    }
+  } catch (e) {
+    console.error('Failed to resolve URL', url, e);
+  }
+  return url;
+}
+
 const locations = [
   {
     "title": "Palatul Parlamentului",
@@ -14,23 +28,23 @@ const locations = [
     "lat": 44.4275,
     "lng": 26.0872,
     "images_urls": [
-      "https://images.unsplash.com/photo-1555990445-43093282f93d?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1590422941913-912544e99505?auto=format&fit=crop&q=80&w=1200",
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Palatul_Parlamentului_Bucuresti.jpg/1280px-Palatul_Parlamentului_Bucuresti.jpg"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Palatul_Parlamentului_1.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Bucuresti_palatul_parlamentului_view.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Palatul_Parlamentului.JPG"
     ]
   },
   {
     "title": "Ateneul Român",
-    "description": "Inima culturii muzicale bucureștene, Ateneul Român este o capodoperă neoclasică inaugurată în 1888. Clădirea este faimoasă nu doar pentru arhitectura sa deosebită, ci și pentru acustica excepțională a sălii de concerte. Marea frescă din interior, care înconjoară cupola, ilustrează 25 de episoade glorioase din istoria poporului român. Este sediul Filarmonicii George Enescu și locul unde au loc cele mai importante evenimente de muzică clasică din țară, fiind un simbol al eleganței capitalei.",
+    "description": "Inima culturii muzicale bucureștene, Ateneul Român este o capodoperă neoclasică inaugurată în 1888. Clădirea este faimoasă nu doar pentru arhitectura sa deosebită, ci și pentru acustica excepțională a sălii de concerte. Marea frescă din interior, care înconjoară cupola, ilustrează 25 de episoade glorioase din istoria poporului român. Este sediul Filarmonicii George Enescu și locul unde au loc cele mai importante mevenimente de muzică clasică din țară, fiind un simbol al eleganței capitalei.",
     "address": "Strada Benjamin Franklin 1-3, București",
     "cities": ["București"],
     "category": "altul",
     "lat": 44.4412,
     "lng": 26.0973,
     "images_urls": [
-      "https://images.unsplash.com/photo-1588612143468-46603348600d?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1616428453444-142c65089069?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1627382215444-42b71940a44f?auto=format&fit=crop&q=80&w=1200"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Ateneul_Roman.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/AteneulRoman.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Ateneul_Român_02.jpg"
     ]
   },
   {
@@ -42,9 +56,9 @@ const locations = [
     "lat": 44.4725,
     "lng": 26.0764,
     "images_urls": [
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Muzeul_Satului_din_Bucuresti.jpg/1280px-Muzeul_Satului_din_Bucuresti.jpg",
-      "https://images.unsplash.com/photo-1596450514735-37597f8e355c?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1605648916361-9bc12ad6a569?auto=format&fit=crop&q=80&w=1200"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Muzeul_Satului_din_Bucuresti.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Muzeul_Satului_Bucuresti.JPG",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Ansamblul_Muzeul_Național_al_Satului_„Dimitrie_Gusti”_(1).jpg"
     ]
   },
   {
@@ -56,9 +70,9 @@ const locations = [
     "lat": 44.4312,
     "lng": 26.1028,
     "images_urls": [
-      "https://images.unsplash.com/photo-1579455359740-420959093015?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1561564739-5a7a18d99416?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1597523277024-8b65675e3c8f?auto=format&fit=crop&q=80&w=1200"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Lipscani_Street,_Bucharest.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Centrul_Vechi_Bucuresti.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Hanul_Lui_Manuc_-2.jpg"
     ]
   },
   {
@@ -70,9 +84,9 @@ const locations = [
     "lat": 44.4326,
     "lng": 26.1039,
     "images_urls": [
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&q=80&w=1200"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Libraria_Carturesti_Carusel_-_Interior_ziua.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Libraria_Cărturești_Carusel,_Bucharest_(46410496141).jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/2020_Casă_cu_prăvălie_Carturesti_Carusel_(2).jpg"
     ]
   },
   {
@@ -84,9 +98,9 @@ const locations = [
     "lat": 44.4707,
     "lng": 26.0815,
     "images_urls": [
-      "https://images.unsplash.com/photo-1598902108854-10e335adac99?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=1200"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Parcul_Herastrau.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Parcul_Herastrau_park_Bucharest_Bucuresti_Romania.JPG",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Herăstrău,_municipiul_București,_Parcul_Herăstrău_01.JPG"
     ]
   },
   {
@@ -99,8 +113,7 @@ const locations = [
     "lng": 26.0783,
     "images_urls": [
       "https://images.unsplash.com/photo-1563812239121-6f0f5b991325?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1577732899490-8e10086c2975?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1549180030-48bf079fb38a?auto=format&fit=crop&q=80&w=1200"
+      "https://images.unsplash.com/photo-1577732899490-8e10086c2975?auto=format&fit=crop&q=80&w=1200"
     ]
   },
   {
@@ -112,27 +125,40 @@ const locations = [
     "lat": 44.4358,
     "lng": 26.0645,
     "images_urls": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1515863261169-222d0d380f33?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1200"
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Bucharest_-_Botanical_Garden.jpg",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Bucarest_Botanical_garden_01.JPG",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Gradina_botanica_din_Bucuresti-Sera_veche.jpg"
     ]
   }
 ]
 
 async function run() {
-  console.log('Seeding 8 locations into Supabase...')
+  console.log('Seeding 8 locations into Supabase for Bucharest with resolved URLs...')
   let successCount = 0
 
+  const { data: existing } = await supabase.from('locations').select('id, title').eq('cities', '{București}')
+  if (existing && existing.length > 0) {
+    for (const ex of existing) {
+      await supabase.from('locations').delete().eq('id', ex.id)
+    }
+  }
+
   for (const loc of locations) {
+    const resolvedUrls = []
+    for (const url of loc.images_urls) {
+      const realUrl = await resolveWikiUrl(url)
+      resolvedUrls.push(realUrl)
+    }
+
     const payload = {
       title: loc.title,
       description: loc.description,
       address: loc.address,
       cities: loc.cities,
       category: loc.category,
-      images_urls: loc.images_urls,
+      images_urls: resolvedUrls,
       location_point: `POINT(${loc.lng} ${loc.lat})`,
-      is_published: true // Auto publish these
+      is_published: true
     }
 
     const { data, error } = await supabase.from('locations').insert(payload)

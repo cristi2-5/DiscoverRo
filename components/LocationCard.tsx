@@ -1,6 +1,10 @@
+'use client'
+
 import { MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { SaveLocationButton } from './SaveLocationButton'
+
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80'
 
 // Defined based on your schema expectations
 export interface LocationCardProps {
@@ -18,7 +22,7 @@ export interface LocationCardProps {
 export function LocationCard({ location, initiallySaved = false }: { location: LocationCardProps, initiallySaved?: boolean }) {
   const imageUrl = location.images_urls && location.images_urls.length > 0 
     ? location.images_urls[0] 
-    : 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80' // Travel placeholder
+    : FALLBACK_IMAGE
 
   return (
     <Link href={`/locatie/${location.id}`} className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-teal-500/10 border border-slate-100">
@@ -26,6 +30,8 @@ export function LocationCard({ location, initiallySaved = false }: { location: L
         <img 
           src={imageUrl} 
           alt={location.title}
+          referrerPolicy="no-referrer"
+          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         {/* Gradient Overlay for Text Readability */}

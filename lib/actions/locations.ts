@@ -8,14 +8,27 @@ import { createClient } from '@/utils/supabase/server'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Fetch all published locations (used as initial SSR payload) */
-export async function getLocations() {
+export async function getLocations(category?: string, sort?: string) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('locations')
     .select('*')
     .eq('is_published', true)
-    .limit(100)
+
+  if (category && category !== 'Toate') {
+    query = query.eq('category', category)
+  }
+
+  if (sort === 'views') {
+    query = query.order('views_count', { ascending: false, nullsFirst: false })
+  } else if (sort === 'likes') {
+    query = query.order('likes_count', { ascending: false, nullsFirst: false })
+  } else if (sort === 'newest') {
+    query = query.order('created_at', { ascending: false, nullsFirst: false })
+  }
+
+  const { data, error } = await query.limit(100)
 
   if (error) {
     console.error('Error fetching locations:', error)
@@ -30,51 +43,92 @@ export async function getLocations() {
  * Uses the `cities` text[] column and the PostgreSQL @> (contains) operator.
  * Input is normalized (diacritics stripped, lower-cased) to match stored values.
  */
-export async function searchLocationsByCity(cityQuery: string) {
+export async function searchLocationsByCity(cityQuery: string, category?: string, sort?: string) {
   const supabase = await createClient()
 
-  // Normalize: strip diacritics, lowercase — matches how cities are stored
-  const normalized = cityQuery
+  const normalizedQuery = cityQuery
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('locations')
     .select('*')
     .eq('is_published', true)
-    .contains('cities', [normalized])
-    .limit(100)
 
-  if (error) {
+  if (category && category !== 'Toate') {
+    query = query.eq('category', category)
+  }
+
+  if (sort === 'views') {
+    query = query.order('views_count', { ascending: false, nullsFirst: false })
+  } else if (sort === 'likes') {
+    query = query.order('likes_count', { ascending: false, nullsFirst: false })
+  } else if (sort === 'newest') {
+    query = query.order('created_at', { ascending: false, nullsFirst: false })
+  }
+
+  const { data, error } = await query.limit(1000)
+
+  if (error || !data) {
     console.error('Error searching by city:', error)
     return []
   }
 
-  return data ?? []
+  return data.filter(loc => {
+    return loc.cities?.some((c: string) => {
+      const normalizedCity = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+      return normalizedCity.includes(normalizedQuery) || normalizedQuery.includes(normalizedCity)
+    })
+  })
 }
 
 /**
  * Search locations by a free-text title keyword.
  * Uses ilike for case-insensitive partial match.
  */
-export async function searchLocationsByTitle(titleQuery: string) {
+export async function searchLocationsByTitle(titleQuery: string, category?: string, sort?: string) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  const normalizedQuery = titleQuery
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+  let query = supabase
     .from('locations')
     .select('*')
     .eq('is_published', true)
-    .ilike('title', `%${titleQuery.trim()}%`)
-    .limit(100)
 
-  if (error) {
+  if (category && category !== 'Toate') {
+    query = query.eq('category', category)
+  }
+
+  if (sort === 'views') {
+    query = query.order('views_count', { ascending: false, nullsFirst: false })
+  } else if (sort === 'likes') {
+    query = query.order('likes_count', { ascending: false, nullsFirst: false })
+  } else if (sort === 'newest') {
+    query = query.order('created_at', { ascending: false, nullsFirst: false })
+  }
+
+  const { data, error } = await query.limit(1000)
+
+  if (error || !data) {
     console.error('Error searching by title:', error)
     return []
   }
 
-  return data ?? []
+  return data.filter(loc => {
+    const normalizedTitle = (loc.title || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+    return normalizedTitle.includes(normalizedQuery)
+  })
 }
 
 /**
@@ -239,8 +293,7 @@ export async function deleteLocation(id: string) {
 export async function incrementLocationViews(id: string) {
   const supabase = await createClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).rpc('increment_views', { location_id: id })
+  const { error } = await (supabase as any).rpc('increment_views', { target_id: id })
   if (error) {
     console.error(`Error incrementing views for location ${id}:`, error)
   }

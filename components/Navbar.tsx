@@ -25,6 +25,12 @@ export default async function Navbar() {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
+            <Link
+              href="/about"
+              className="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-medium transition-colors"
+            >
+              Despre Noi
+            </Link>
             {user ? (
                 <>
                 {profile?.role === 'merchant' && (
@@ -51,6 +57,7 @@ export default async function Navbar() {
                    <button
                     type="submit"
                     className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-colors border border-slate-200"
+                    suppressHydrationWarning
                   >
                     Logout
                   </button>

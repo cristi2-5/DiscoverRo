@@ -5,6 +5,28 @@ import { MapPin, ArrowLeft, Image as ImageIcon, Phone, Globe, Instagram, Faceboo
 import Link from 'next/link'
 import MapWrapper from '@/components/MapWrapper'
 
+// Resolve a commons.wikimedia.org/wiki/Special:FilePath URL to a direct upload.wikimedia.org URL
+async function resolveWikimediaUrl(url: string): Promise<string> {
+  if (!url.includes('Special:FilePath') && !url.includes('commons.wikimedia.org/wiki/')) return url
+  const parts = url.split('/')
+  let filename = parts[parts.length - 1]
+  try { filename = decodeURIComponent(filename) } catch {}
+  try {
+    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(filename)}&prop=imageinfo&iiprop=url&format=json&origin=*`
+    const res = await fetch(apiUrl, {
+      headers: { 'User-Agent': 'DiscoverRoApp/1.0' },
+      next: { revalidate: 86400 },
+    })
+    if (!res.ok) return url
+    const data = await res.json()
+    const pages = data.query?.pages as Record<string, { imageinfo?: { url: string }[] }>
+    const page = Object.values(pages)[0]
+    return page?.imageinfo?.[0]?.url ?? url
+  } catch {
+    return url
+  }
+}
+
 // Fetch the best available image for an OSM location:
 //  1. Use stored images_urls if not a generic placeholder
 //  2. Try Wikimedia via the wikipedia OSM tag (handles "ro:PageName" format)
@@ -20,7 +42,10 @@ async function resolveHeroImage(location: {
 
   // 1. Use stored image if it's not our seeder placeholder
   const stored = location.images_urls?.[0]
-  if (stored && !stored.includes(PLACEHOLDER)) return stored
+  if (stored && !stored.includes(PLACEHOLDER)) {
+    // Resolve Special:FilePath URLs to direct URLs
+    return resolveWikimediaUrl(stored)
+  }
 
   // Helper to fetch Wikipedia thumbnail via the action API
   async function wikiThumbnail(lang: string, title: string): Promise<string | null> {
@@ -79,6 +104,11 @@ export default async function LocationDetailsPage({
   const coords   = extractCoordinates(location.location_point)
   const heroImage = await resolveHeroImage(location)
 
+  // Resolve all gallery image URLs (Special:FilePath → direct upload URLs)
+  const resolvedGalleryUrls = location.images_urls && location.images_urls.length > 1
+    ? await Promise.all(location.images_urls.slice(1).map(resolveWikimediaUrl))
+    : []
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Hero Section */}
@@ -86,6 +116,7 @@ export default async function LocationDetailsPage({
         <img
           src={heroImage}
           alt={location.title || 'Location'}
+          referrerPolicy="no-referrer"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/40 to-transparent" />
@@ -179,16 +210,16 @@ export default async function LocationDetailsPage({
               )}
             </section>
 
-            {location.images_urls && location.images_urls.length > 1 && (
+            {resolvedGalleryUrls.length > 0 && (
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
                   <ImageIcon className="h-6 w-6 text-indigo-500" />
                   Galerie
                 </h2>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  {location.images_urls.slice(1).map((imgUrl: string, idx: number) => (
+                  {resolvedGalleryUrls.map((imgUrl: string, idx: number) => (
                     <div key={idx} className="aspect-w-1 aspect-h-1 overflow-hidden rounded-xl bg-gray-100 shadow-sm">
-                      <img src={imgUrl} alt="Gallery item" className="h-full w-full object-cover transition-transform hover:scale-105 duration-300" />
+                      <img src={imgUrl} alt="Gallery item" referrerPolicy="no-referrer" className="h-full w-full object-cover transition-transform hover:scale-105 duration-300" />
                     </div>
                   ))}
                 </div>

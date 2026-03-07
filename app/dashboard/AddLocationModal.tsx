@@ -388,7 +388,7 @@ export default function AddLocationModal({ onClose, onCreated }: AddLocationModa
                 {imagePreviews.map((src, i) => (
                   <div key={i} className="relative group rounded-lg overflow-hidden aspect-video">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <img src={src} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removeImage(i)}
