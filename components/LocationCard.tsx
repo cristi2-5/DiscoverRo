@@ -2,9 +2,39 @@
 
 import { MapPin } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
 import { SaveLocationButton } from './SaveLocationButton'
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80'
+
+/**
+ * Transformă URL-uri Special:FilePath în URL-uri directe thumbnail.
+ * commons.wikimedia.org/wiki/Special:FilePath/X.jpg → upload.wikimedia.org/...
+ */
+function toDirectImageUrl(url: string): string {
+  if (!url) return FALLBACK_IMAGE
+  // Already a direct upload URL — good
+  if (url.includes('upload.wikimedia.org')) return url
+  // Unsplash URLs work fine
+  if (url.includes('unsplash.com')) return url
+  // Supabase storage URLs work fine
+  if (url.includes('supabase.co')) return url
+
+  // Convert Special:FilePath URLs to direct Wikimedia thumbnail URLs
+  if (url.includes('Special:FilePath/') || url.includes('commons.wikimedia.org/wiki/File:')) {
+    let filename = ''
+    if (url.includes('Special:FilePath/')) {
+      filename = url.split('Special:FilePath/')[1] || ''
+    } else {
+      filename = url.split('File:')[1] || ''
+    }
+    if (filename) {
+      // Use the Wikimedia REST API thumb endpoint which always returns a direct image
+      return `https://commons.wikimedia.org/w/thumb.php?f=${encodeURIComponent(filename)}&w=800`
+    }
+  }
+  return url
+}
 
 // Defined based on your schema expectations
 export interface LocationCardProps {
@@ -20,9 +50,10 @@ export interface LocationCardProps {
 }
 
 export function LocationCard({ location, initiallySaved = false }: { location: LocationCardProps, initiallySaved?: boolean }) {
-  const imageUrl = location.images_urls && location.images_urls.length > 0 
+  const rawUrl = location.images_urls && location.images_urls.length > 0 
     ? location.images_urls[0] 
     : FALLBACK_IMAGE
+  const [imageUrl, setImageUrl] = useState(() => toDirectImageUrl(rawUrl))
 
   return (
     <Link href={`/locatie/${location.id}`} className="group relative flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 border border-slate-100 dark:border-slate-800">
@@ -31,7 +62,12 @@ export function LocationCard({ location, initiallySaved = false }: { location: L
           src={imageUrl} 
           alt={location.title}
           referrerPolicy="no-referrer"
-          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
+          loading="lazy"
+          onError={() => {
+            if (imageUrl !== FALLBACK_IMAGE) {
+              setImageUrl(FALLBACK_IMAGE)
+            }
+          }}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         {/* Gradient Overlay for Text Readability */}

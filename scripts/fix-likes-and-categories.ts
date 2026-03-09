@@ -35,7 +35,7 @@ function guessCategory(title: string, description: string): string {
 
 async function fixLikesAndCategories() {
   console.log('Fetching all locations...')
-  const { data: locations, error: locError } = await supabase.from('locations').select('id, title, description, category')
+  const { data: locations, error: locError } = await supabase.from('locations').select('id, title, description, category, likes_count')
   if (locError) {
     console.error('Error fetching locations:', locError)
     return

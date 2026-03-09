@@ -12,20 +12,33 @@ import { Star } from 'lucide-react'
 // Resolve a commons.wikimedia.org/wiki/Special:FilePath URL to a direct upload.wikimedia.org URL
 async function resolveWikimediaUrl(url: string): Promise<string> {
   if (!url.includes('Special:FilePath') && !url.includes('commons.wikimedia.org/wiki/')) return url
-  const parts = url.split('/')
-  let filename = parts[parts.length - 1]
+  
+  // Extract filename
+  let filename = ''
+  if (url.includes('Special:FilePath/')) {
+    filename = url.split('Special:FilePath/')[1] || ''
+  } else if (url.includes('File:')) {
+    filename = url.split('File:')[1] || ''
+  } else {
+    const parts = url.split('/')
+    filename = parts[parts.length - 1]
+  }
+  if (!filename) return url
   try { filename = decodeURIComponent(filename) } catch {}
+  
   try {
-    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(filename)}&prop=imageinfo&iiprop=url&format=json&origin=*`
+    // Request thumb URL at 800px width — these are always direct upload.wikimedia.org links
+    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(filename)}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`
     const res = await fetch(apiUrl, {
       headers: { 'User-Agent': 'DiscoverRoApp/1.0' },
       next: { revalidate: 86400 },
     })
     if (!res.ok) return url
     const data = await res.json()
-    const pages = data.query?.pages as Record<string, { imageinfo?: { url: string }[] }>
+    const pages = data.query?.pages as Record<string, { imageinfo?: { url: string; thumburl?: string }[] }>
     const page = Object.values(pages)[0]
-    return page?.imageinfo?.[0]?.url ?? url
+    // Prefer thumburl (resized, direct) over url (full-size, may redirect)
+    return page?.imageinfo?.[0]?.thumburl ?? page?.imageinfo?.[0]?.url ?? url
   } catch {
     return url
   }

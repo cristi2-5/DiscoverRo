@@ -334,6 +334,7 @@ export function HomeClient({
             <button
               key={cat}
               onClick={() => handleFilterChange(cat, sort)}
+              suppressHydrationWarning
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 category === cat 
                   ? 'bg-amber-500 text-white shadow-sm' 
@@ -349,6 +350,7 @@ export function HomeClient({
             onClick={handleNearMe}
             className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors mr-2 shadow-sm whitespace-nowrap"
             disabled={isPending || loadingState === 'locating'}
+            suppressHydrationWarning
           >
             <MapPin className={`h-4 w-4 ${loadingState === 'locating' ? 'animate-pulse' : ''}`} />
             {loadingState === 'locating' ? 'Lângă mine...' : 'Lângă mine'}
@@ -360,6 +362,7 @@ export function HomeClient({
               value={sort}
               onChange={(e) => handleFilterChange(category, e.target.value)}
               className="block w-full rounded-md border-0 py-2 pl-3 pr-10 text-slate-900 dark:text-white bg-white dark:bg-slate-900 ring-1 ring-inset ring-slate-200 dark:ring-slate-800 focus:ring-2 focus:ring-amber-500 sm:text-sm sm:leading-6"
+              suppressHydrationWarning
             >
               <option value="views">Cele mai văzute</option>
               <option value="likes">Cele mai apreciate</option>
