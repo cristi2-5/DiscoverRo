@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DiscoverRo
+
+DiscoverRo is a web application designed to help users explore the best tourist destinations in Romania. The app makes it easy to find beautiful locations, historic sites, and natural wonders, and automatically generates smart itineraries to help you plan your trips.
+
+## What it does
+
+- **Explore Top Destinations**: Browse through carefully curated points of interest (POIs) across Romania's top 50 cities and tourist regions.
+- **Interactive Maps**: View locations on an interactive map.
+- **Smart Itineraries**: The app automatically groups nearby locations and calculates the best route between them, creating manageable travel clusters so you don't have to plan everything manually.
+- **Rich Information**: Get quick summaries and pictures of places sourced automatically from Wikipedia and OpenStreetMap.
+
+## Technologies Used
+
+This project was built using modern web development tools:
+
+- **Next.js & React**: The core framework used to build the user interface and handle routing.
+- **Tailwind CSS**: Used for styling the application quickly and making it responsive on all devices.
+- **Supabase**: Our cloud database and backend. It securely stores all the locations, routes, and user data.
+- **Leaflet & React-Leaflet**: The map library used to display interactive maps and draw routes between destinations.
+- **TypeScript**: Used throughout the project to ensure the code is robust and error-free.
+
+## How the data was gathered
+
+The locations were gathered using a custom data scraper that:
+1. Queries **OpenStreetMap (Overpass API)** to find relevant tourist attractions (parks, museums, castles, etc.).
+2. Connects to **Wikipedia** and **Wikimedia Commons** to fetch descriptions and high-quality thumbnail images for each location.
+3. Saves everything securely into our **Supabase** database.
 
 ## Getting Started
 
-First, run the development server:
+To run the project locally, install the dependencies and start the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the app running.
